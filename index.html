@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tide Watch: Mactan</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1350&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+    }
+    header {
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+    }
+    .weather {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      text-align: right;
+      font-size: 0.9rem;
+      color: #ffffff;
+    }
+    .container {
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 1rem;
+      margin: 1rem;
+      border-radius: 10px;
+    }
+    .level {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .recommendation {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+    .chart-container {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #ffffff;
+    }
+    .actions {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    select {
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    a.button {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+      background: #0077b6;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tide Watch: Mactan</h1>
+    <p>Локация: Mactan, Cebu</p>
+    <div class="weather" id="weatherBox">
+      🌡️ 30°C<br>
+      ☁️ Облачно<br>
+      💨 12 км/ч<br>
+      🔆 УФ: 5 (умеренно)
+    </div>
+  </header>
+  <div class="container">
+    <div class="actions">
+      <select id="languageSelector">
+        <option value="ru">Русский</option>
+        <option value="en">English</option>
+      </select>
+      <a class="button" href="#" onclick="window.print()">Скачать как PDF</a>
+      <a class="button" href="forecast.html">Прогноз на 3 дня</a>
+    </div>
+    <div class="level" id="currentLevel">Текущий уровень воды: ...</div>
+    <div class="recommendation" id="swimAdvice"></div>
+    <div class="chart-container">
+      <canvas id="tideChart"></canvas>
+    </div>
+    <div class="bottom-bar">
+      <span>00:00</span>
+      <span>06:00</span>
+      <span>12:00</span>
+      <span>18:00</span>
+      <span>24:00</span>
+    </div>
+  </div>
+  <script>
+    const langData = {
+      ru: {
+        currentLevel: 'Текущий уровень воды:',
+        forecast: 'Прогноз на 3 дня',
+        download: 'Скачать как PDF',
+        swim: 'Рекомендовано для купания:'
+      },
+      en: {
+        currentLevel: 'Current water level:',
+        forecast: '3-Day Forecast',
+        download: 'Download as PDF',
+        swim: 'Recommended for swimming:'
+      }
+    };
+
+    const now = new Date();
+    const labels = [];
+    const levels = [];
+
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getTime() + i * 3600000);
+      const hours = date.getHours().toString().padStart(2, '0');
+      labels.push(`${hours}:00`);
+      const level = 1.5 + 0.5 * Math.sin(i * Math.PI / 12);
+      levels.push(level);
+    }
+
+    function updateText(lang) {
+      document.getElementById("currentLevel").innerText = `${langData[lang].currentLevel} ${levels[0].toFixed(2)} м`;
+      const recommendation = document.getElementById("swimAdvice");
+      const level = levels[0];
+      let color = '', text = '';
+      if (level >= 1.8) { color = 'lightgreen'; text = lang === 'ru' ? 'Высокий' : 'High'; }
+      else if (level >= 1.3) { color = 'yellow'; text = lang === 'ru' ? 'Средний' : 'Medium'; }
+      else { color = 'tomato'; text = lang === 'ru' ? 'Низкий' : 'Low'; }
+      recommendation.innerText = `${langData[lang].swim} ${text}`;
+      recommendation.style.color = color;
+    }
+
+    document.getElementById("languageSelector").addEventListener("change", (e) => {
+      updateText(e.target.value);
+    });
+
+    updateText('ru');
+
+    const ctx = document.getElementById("tideChart").getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Уровень воды (м)",
+            data: levels,
+            borderColor: "#0077b6",
+            backgroundColor: "rgba(0,119,182,0.1)",
+            tension: 0.4,
+            pointRadius: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Время"
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Уровень воды (м)"
+            }
+          }
+        },
+      },
+    });
+  </script>
+</body>
+</html>
